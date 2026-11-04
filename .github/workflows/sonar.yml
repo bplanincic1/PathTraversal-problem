@@ -1,0 +1,52 @@
+
+name: SonarQube - CWE22
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze both C# projects
+    runs-on: windows-latest
+
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Begin SonarQube analysis
+        run: |
+          dotnet sonarscanner begin /k:"bplanincic1_PathTraversal-problem" /o:"bplanincic1" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io"
+
+      - name: Build problematican projekat
+        run: dotnet build ./Problematican/PathTraversal-p.csproj --no-incremental
+
+      - name: Build ispravan projekat
+        run: dotnet build ./Ispravan/PathTraversal-Ispravan.csproj --no-incremental
+
+      - name: End SonarQube analysis
+        run: |
+          dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
